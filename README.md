@@ -67,7 +67,21 @@ def log_progress(sequence, every=None, size=None):
     else:
         progress.bar_style = 'success'
         progress.value = index
-        label.value = str(index or '?')
+        try:
+            avr = u' | avr iteration time : {avr})'.format(
+                avr=str(timedelta(seconds=sum(delta_timestamps)
+                                  / float(len(delta_timestamps)))).split('.', 2)[0]
+            )
+        except:
+            avr=')'
+        try:
+            total = u' (total time : {total}'.format(
+                total=str(timedelta(seconds=timestamps[-1]-timestamps[0])).split('.', 2)[0]
+            )
+        except:
+            avr = ''
+            total = ''
+        label.value = str(str(index) + total + avr or '?')
 ```
 
 ### Examples
