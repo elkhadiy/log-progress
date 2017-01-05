@@ -6,6 +6,8 @@ Just copy and paste it into your project:
 def log_progress(sequence, every=None, size=None):
     from ipywidgets import IntProgress, HTML, VBox
     from IPython.display import display
+    from datetime import timedelta
+    from time import time
     
     is_iterator = False
     if size is None:
@@ -18,7 +20,7 @@ def log_progress(sequence, every=None, size=None):
             if size <= 200:
                 every = 1
             else:
-                every = int(size / 200)     # every 0.5%
+                every = size / 200     # every 0.5%
     else:
         assert every is not None, 'sequence is iterator, set every'
 
@@ -32,16 +34,31 @@ def log_progress(sequence, every=None, size=None):
     display(box)
     
     index = 0
+    timestamps = []
+    delta_timestamps = []
     try:
         for index, record in enumerate(sequence, 1):
+            timestamps.append(time())
             if index == 1 or index % every == 0:
                 if is_iterator:
                     label.value = '{index} / ?'.format(index=index)
                 else:
                     progress.value = index
-                    label.value = u'{index} / {size}'.format(
+                    if len(timestamps) == 1 :
+                        eta = u''
+                    else:
+                        delta_timestamps.append(timestamps[-1] - timestamps[-2])
+                        last = timedelta(seconds=timestamps[-1] - timestamps[-2])
+                        avr = sum(delta_timestamps) / float(len(delta_timestamps))
+                        eta = u'(time remaining : {eta} | last : {last} | avr : {avr})'.format(
+                            eta=str(timedelta(seconds=avr * (size - index))).split('.', 2)[0],
+                            last=str(last).split('.', 2)[0],
+                            avr=str(timedelta(seconds=avr)).split('.', 2)[0]
+                        )
+                    label.value = u'{index} / {size} {eta}'.format(
                         index=index,
-                        size=size
+                        size=size,
+                        eta=eta
                     )
             yield record
     except:
@@ -50,7 +67,21 @@ def log_progress(sequence, every=None, size=None):
     else:
         progress.bar_style = 'success'
         progress.value = index
-        label.value = str(index or '?')
+        try:
+            avr = u' | avr iteration time : {avr})'.format(
+                avr=str(timedelta(seconds=sum(delta_timestamps)
+                                  / float(len(delta_timestamps)))).split('.', 2)[0]
+            )
+        except:
+            avr=')'
+        try:
+            total = u' (total time : {total}'.format(
+                total=str(timedelta(seconds=timestamps[-1]-timestamps[0])).split('.', 2)[0]
+            )
+        except:
+            avr = ''
+            total = ''
+        label.value = str(str(index) + total + avr or '?')
 ```
 
 ### Examples
